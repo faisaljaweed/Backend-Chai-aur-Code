@@ -1,13 +1,14 @@
 import dontenv from "dotenv";
 import connectDB from "./db/database.js";
 import { app } from "./app.js";
+
 dontenv.config({
-  path: "./env",
+  path: "./.env",
 });
 
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
+    app.listen(process.env.PORT || 3000, () => {
       console.log(`App is listening on port ${process.env.PORT}`);
     });
   })
