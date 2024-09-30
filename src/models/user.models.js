@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-const UserSchema = new mongoose.Schema(
+const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
@@ -26,13 +26,16 @@ const UserSchema = new mongoose.Schema(
     },
     avatar: {
       type: String, //Cloudinary url
-      required: true,
+      // required: true,
     },
     coverImage: {
       type: String, //Cloudinary url
-      required: true,
+      // required: true,
     },
-    watchhistory: [{ type: Schema.Types.ObjectId, ref: "Video" }],
+    watchhistory: {
+      type: Schema.Types.ObjectId,
+      ref: "Video",
+    },
     password: {
       type: String,
       required: [true, "password is required"],
@@ -44,16 +47,16 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) next();
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-UserSchema.methods.isPasswordCorrect = async function (password) {
+userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-UserSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function () {
   jwt.sign(
     {
       _id: this._id,
@@ -63,12 +66,12 @@ UserSchema.methods.generateAccessToken = function () {
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.envACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     }
   );
 };
 
-UserSchema.methods.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function () {
   jwt.sign(
     {
       _id: this._id,
@@ -80,4 +83,4 @@ UserSchema.methods.generateRefreshToken = function () {
   );
 };
 
-export const User = mongoose.model("User", UserSchema);
+export const User = mongoose.model("User", userSchema);
