@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String, //Cloudinary url
-      // required: true,
+      required: true,
     },
     coverImage: {
       type: String, //Cloudinary url
@@ -57,7 +57,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 userSchema.methods.generateAccessToken = function () {
-  jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
       fullname: this.fullname,
@@ -72,13 +72,13 @@ userSchema.methods.generateAccessToken = function () {
 };
 
 userSchema.methods.generateRefreshToken = function () {
-  jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
     },
     process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: REFRESH_TOKEN_EXPIRY,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     }
   );
 };

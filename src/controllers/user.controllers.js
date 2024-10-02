@@ -3,6 +3,28 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
+const generateAccessandRefreshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating refrsh and access token"
+    );
+  }
+};
+
 const registerUser = asynchandler(async (req, res) => {
   // get user details from frotends
   // validation -not empty
@@ -27,7 +49,7 @@ const registerUser = asynchandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
   if (!email.includes("@") || !email.includes(".")) {
-    throw new ApiError(400, "Invalid email format");
+    throw new ApiError(400, "Invalid email form at");
   }
 
   // check if user already exists username, email
@@ -100,4 +122,86 @@ const registerUser = asynchandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User registerd successfully"));
 });
 
-export { registerUser };
+const loginUser = asynchandler(async (req, res) => {
+  // user email and password
+  // check Validate email and password
+  // find the user
+  //access and refresh token
+  //send cookie
+  //respose login
+
+  // user email and password
+
+  const { email, password, username } = req.body;
+  console.log(email);
+  if (!(username && !email)) {
+    if (!username || !email) {
+      throw new ApiError(400, "Username and Password is required");
+    }
+  }
+
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+  if (!user) {
+    throw new ApiError(404, "Usser does not exists");
+  }
+
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid User Credentails");
+  }
+  console.log(`Successfully ${isPasswordValid}`);
+  const { accessToken, refreshToken } = await generateAccessandRefreshToken(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refresh", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User LoggedInSuccessfully"
+      )
+    );
+});
+
+const logOutUser = asynchandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: { refreshToken: undefined },
+    },
+    {
+      new: true,
+    }
+  );
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User Logged Out"));
+});
+
+export { registerUser, loginUser, logOutUser };
