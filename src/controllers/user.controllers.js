@@ -7,9 +7,11 @@ import jwt from "jsonwebtoken";
 const generateAccessandRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
+
     if (!user) {
       throw new ApiError(404, "User not found");
     }
+
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
@@ -106,7 +108,7 @@ const registerUser = asynchandler(async (req, res) => {
   });
 
   // remove password and refresh token field from response
-
+  // password and refreshToken save in database but secure save
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
@@ -123,7 +125,7 @@ const registerUser = asynchandler(async (req, res) => {
 });
 
 const loginUser = asynchandler(async (req, res) => {
-  // user email and password
+  // user email and password from frontend
   // check Validate email and password
   // find the user
   //access and refresh token
@@ -134,11 +136,16 @@ const loginUser = asynchandler(async (req, res) => {
 
   const { email, password, username } = req.body;
   console.log(email);
+
+  // check username and password
+
   if (!(username && !email)) {
     if (!username || !email) {
       throw new ApiError(400, "Username and Password is required");
     }
   }
+
+  // check username and email is same in database
 
   const user = await User.findOne({
     $or: [{ username }, { email }],
@@ -147,12 +154,15 @@ const loginUser = asynchandler(async (req, res) => {
     throw new ApiError(404, "Usser does not exists");
   }
 
+  //
+
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid User Credentails");
   }
   console.log(`Successfully ${isPasswordValid}`);
+
   const { accessToken, refreshToken } = await generateAccessandRefreshToken(
     user._id
   );
@@ -160,7 +170,7 @@ const loginUser = asynchandler(async (req, res) => {
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
-
+  // ye options jb dete hain tw server se ye modified
   const options = {
     httpOnly: true,
     secure: true,
@@ -204,4 +214,48 @@ const logOutUser = asynchandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User Logged Out"));
 });
 
-export { registerUser, loginUser, logOutUser };
+const refresAccesshToken = asynchandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Uauthorized Request");
+  }
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedToken?._id);
+    if (!user) {
+      throw new ApiError(401, "invalid refresh token");
+    }
+    if (incomingRefreshToken !== user?.refreshToken) {
+      throw new ApiError(401, "Refresh Token is expired and or used");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, newrefreshToken } =
+      await generateAccessandRefreshToken(user._id);
+
+    return res
+      .status(200)
+      .cookies("accessToken", accessToken, options)
+      .cookies("refreshToken", newrefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, newrefreshToken },
+          "Access Token Successfully "
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid refresh Token");
+  }
+});
+
+export { registerUser, loginUser, logOutUser, refresAccesshToken };
