@@ -25,8 +25,19 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 
-import router from "./routes/user.routes.js";
-
-app.use("/api/v1/users", router);
+import userRouter from "./routes/user.routes.js";
+import commentsRouter from "./routes/comments.routes.js";
+import tweetsRouter from "./routes/tweets.routes.js";
+import likesRouter from "./routes/likes.routes.js";
+import videoRouter from "./routes/video.routes.js";
+import subscribeRouter from "./routes/subscription.routes.js";
+import playlistRouter from "./routes/playlist.routes.js";
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/comments", commentsRouter);
+app.use("/api/v1/tweets", tweetsRouter);
+app.use("/api/v1/likes", likesRouter);
+app.use("/api/v1/videos", videoRouter);
+app.use("/api/vi/subscribe", subscribeRouter);
+app.use("/api/vi/playlist", playlistRouter);
 
 export { app };
