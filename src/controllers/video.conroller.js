@@ -1,9 +1,11 @@
+import { ApiError } from "../utils/ApiError.js";
 import { asynchandler } from "../utils/asynchandler.js";
+import { Video } from "../models";
 // get all video get
-// create video post
+// Publish/ Add video post
 // delete video delete
 // update video put
-//get Video by id get
+// get Video by id get
 // toggle publish Status
 
 const getAllVIdeos = asynchandler(async (req, res) => {
