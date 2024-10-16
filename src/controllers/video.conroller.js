@@ -1,4 +1,5 @@
 import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { Video } from "../models/video.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
@@ -15,9 +16,18 @@ const getAllVIdeos = asynchandler(async (req, res) => {
 });
 
 const publishAVideo = asynchandler(async (req, res) => {
-  const { title, description } = req.body;
-  if (!(title, description, req.files)) {
-    throw new ApiError(402, "title, description and video files are requires");
+  const { title, description, duration } = req.body;
+  // if (!(title, description, req.files)) {
+  //   throw new ApiError(402, "title, description and video files are requires");
+  // }
+  if (!title) {
+    throw new ApiError(402, "Title is required");
+  }
+  if (!description) {
+    throw new ApiError(402, "Description is required");
+  }
+  if (!req.files) {
+    throw new ApiError(402, "Video is required");
   }
 
   if (!req.files.videofile || req.files.videofile === 0) {
@@ -52,6 +62,7 @@ const publishAVideo = asynchandler(async (req, res) => {
     thumbnail: thumbnail.url,
     title,
     description,
+    duration: Number(duration),
   });
 
   return res
@@ -80,7 +91,7 @@ const updateVideo = asynchandler(async (req, res) => {
     throw new ApiError(401, "Video id is not Valid");
   }
 
-  const video = Video.findById(videoId);
+  const video = await Video.findById(videoId);
 
   if (!video) {
     throw new ApiError(401, "Video not found");
@@ -100,7 +111,7 @@ const updateVideo = asynchandler(async (req, res) => {
   if (videofile) {
     video.videofile = videofile;
   }
-  await video.save();
+  await video.save({ validateBeforeSave: false });
   return res
     .status(200)
     .json(new ApiResponse(200, video, "Video Update Successfully"));
@@ -125,8 +136,9 @@ const deleteVideo = asynchandler(async (req, res) => {
 
 const togglePublishStatus = asynchandler(async (req, res) => {
   const { videoId } = req.params;
-  if (isValidObjectId(videoId)) {
-    throw new ApiError(401, "thsi video is not valid");
+  const { ispublished } = req.body;
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(401, "this video id is not valid");
   }
   const video = await Video.findById(videoId);
   if (!video) {
@@ -153,3 +165,5 @@ export {
   deleteVideo,
   togglePublishStatus,
 };
+
+//670f9b79ec05d58aaf945572

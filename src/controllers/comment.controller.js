@@ -3,6 +3,7 @@ import { Comment } from "../models/comments.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { isValidObjectId } from "mongoose";
+import mongoose from "mongoose";
 // get Videos comments
 // add comment
 // delete comment
@@ -17,10 +18,10 @@ const getVideoComments = asynchandler(async (req, res) => {
   const aggregate = Comment.aggregate([
     {
       $match: {
-        video: mongoose.Types.ObjectId(videoId),
+        video: new mongoose.Types.ObjectId(videoId),
       },
       $lookup: {
-        from: "users",
+        from: "user",
         localField: "owner",
         foreignField: "_id",
         as: "owner",
@@ -53,10 +54,10 @@ const addComment = asynchandler(async (req, res) => {
   if (!content) {
     throw new ApiError(401, "Content is required");
   }
-  const comment = await Comment.findById(videoId);
-  if (!comment) {
-    throw new ApiError(404, "Comment not found");
-  }
+  // const comment = await Comment.findById(videoId);
+  // if (!comment) {
+  //   throw new ApiError(404, "Comment not found");
+  // }
   const newComment = await Comment.create({
     content,
     video: videoId,

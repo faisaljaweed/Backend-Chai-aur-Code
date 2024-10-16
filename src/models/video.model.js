@@ -10,7 +10,7 @@ const videoSchema = new mongoose.Schema(
       type: String, //cloundnariy url
       required: true,
     },
-    tittle: {
+    title: {
       type: String,
       required: true,
     },
